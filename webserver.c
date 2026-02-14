@@ -410,6 +410,7 @@ void *handle_client(void *arg) {
     int client_fd = (int)(long)arg;
     HttpRequest httpRequest;
     char *buffer = (char *)allocmem(BUFFER_SIZE * sizeof(char));
+    clock_t threadStart = clock();
 
     // set timeout
 #ifdef _MSC_VER
@@ -424,12 +425,14 @@ void *handle_client(void *arg) {
     if ( gVerbose )
         printf( "socket %d listening with timeout %d\n", client_fd, gnFrequency );
 
-
     int fSocketKeepAlive = 0;
+    int count = 0;
     do {
         // receive request data from client and store into buffer
         ssize_t bytes_received = recv(client_fd, buffer, BUFFER_SIZE, 0);
         if (bytes_received > 0 && bytes_received < BUFFER_SIZE) {
+            clock_t cstart = clock();
+            count++;
             get_http_request_details( &httpRequest, buffer );
             if (gVerbose)
                 printf("%s", buffer);
@@ -454,14 +457,17 @@ void *handle_client(void *arg) {
                     http_method_not_allowed( &httpRequest );
             }
 
-            if (gVerbose) {
-                char* pEnd = strstr(httpRequest.response, "\r\n\r\n");
-                int len = pEnd - httpRequest.response;
-                printf("%*.*s\n\n", len, len, httpRequest.response);
-            }
-
             // send HTTP response to client
             send(client_fd, httpRequest.response, httpRequest.response_len, 0);
+
+            clock_t cfinish = clock();
+            if (gVerbose) {
+    			double elapsed_time = (double)(cfinish - cstart) / CLOCKS_PER_SEC;
+                char* pEnd = strstr(httpRequest.response, "\r\n\r\n");
+                int len = pEnd - httpRequest.response;
+                printf("%*.*s\n\nsocket %d response time %6.2f sec(s)\n"
+                    , len, len, httpRequest.response, client_fd, elapsed_time);
+            }
 
             fSocketKeepAlive = is_keep_alive_set( &httpRequest );
 
@@ -475,12 +481,18 @@ void *handle_client(void *arg) {
             fSocketKeepAlive = 0;
         
         if ( gVerbose && fSocketKeepAlive )
-            printf( "socket Keep-Alive %d\n", client_fd );
+            printf( "socket %d Keep-Alive\n", client_fd );
+
+        if ( gVerbose )
+            printf( "\n" );
 
     } while( fSocketKeepAlive );
 
-    if ( gVerbose )
-        printf( "socket close %d\n", client_fd );
+    clock_t threadFinish = clock();
+    if ( gVerbose ) {
+        double elapsed_time = (double)(threadFinish - threadStart) / CLOCKS_PER_SEC;
+        printf( "socket close %d running time %6.2f sec(s), requests %d\n", client_fd, elapsed_time, count );
+    }
     close(client_fd);
     free(buffer);
     return NULL;

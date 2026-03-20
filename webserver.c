@@ -42,6 +42,14 @@
 #define BUFFER_SIZE 104857600
 #define WEBSERVER_NAME "Tiny Webserver"
 
+#define ASCII_ART \
+" __      __      ___. \n" \
+"/  \\    /  \\ ____\\_ |__   ______ ______________  __ ___________\n" \
+"\\   \\/\\/   // __ \\| __ \\ /  ___// __ \\_  __ \\  \\/ // __ \\_  __ \\\n" \
+" \\        /\\  ___/| \\_\\ \\\\___ \\\\  ___/|  | \\/\\   /\\  ___/|  | \\/\n" \
+"  \\__/\\  /  \\___  >___  /____  >\\___  >__|    \\_/  \\___  >__|\n" \
+"       \\/       \\/    \\/     \\/     \\/                 \\/"
+
 int gPort = 3000;
 char gLocalPath[256] = "./";
 char gStartPage[256] = "index.html";
@@ -660,6 +668,9 @@ int main(int argc, char *argv[]) {
     }
 
     // listen for connections
+    if (gVerbose) {
+        printf("%s\n\n", ASCII_ART);
+    }
     printf("Server listening on port %d\n", gPort);
     if (gVerbose ) {
         printf( "Local path:\t%s\nStart page:\t%s\nFrequency:\t%d\nCaching:\t%s\n"
